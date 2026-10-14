@@ -146,6 +146,7 @@ void CurrentCalibrationStep(void)
         if (sys_msg.bus_voltage_check_flag < 0) // 母线电压不稳定，电流不进行校准，不开波，报校准错误
         {
             sys_msg.current_calibration.result = CURRENT_CALIBRATION_STATUS_ERR_BUS_VOLTAGE;     // 3校准过程中母线电压不稳定错误
+            sys_msg.current_calibration.start_flag = false; // 允许清错后重新校准时再次开波
             set_bsp_error_state(ERROR_CURRENT_SAMPLE, ERROR_SET); // 设置电流采样错误
             bsp_set_pwm_state(PWM_DISABLE);               // 立刻关闭PWM,防止电流过大
             return;
@@ -181,6 +182,7 @@ void CurrentCalibrationStep(void)
             current_temp[2] = 0;
 
             sys_msg.current_calibration.result = CURRENT_CALIBRATION_STATUS_ERR_BIG_CURRENT;   // 2校准中心电流过大错误
+            sys_msg.current_calibration.start_flag = false; // 允许清错后重新校准时再次开波
             set_bsp_error_state(ERROR_CURRENT_SAMPLE, ERROR_SET); // 设置电流采样错误
             bsp_set_pwm_state(PWM_DISABLE);               // 立刻关闭PWM,防止电流过大
             return;
