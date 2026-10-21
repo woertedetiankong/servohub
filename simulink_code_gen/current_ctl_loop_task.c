@@ -265,16 +265,29 @@ void current_ctl_loop_task(const CurrentCtlInput *rtu_input, const
      *  RelationalOperator: '<S24>/UpperRelop'
      *  Switch: '<S24>/Switch'
      */
-    if (rtb_Add3 > rtb_Gain)
     {
-        rtb_Add3 = rtb_Gain;
-    }
-    else if (rtb_Add3 < -rtb_Gain)
-    {
-        /* Switch: '<S24>/Switch' incorporates:
-         *  Gain: '<S15>/Gain1'
-         */
-        rtb_Add3 = -rtb_Gain;
+        /* fix/q-integrator-windup: clamp the q integrator to q's share of the
+         * voltage circle, sqrt(Vmax^2 - ud^2), the same bound uq gets below.
+         * It was Vmax, so whenever ud != 0 the integrator stored voltage that
+         * q could never use, and had to unwind it before iq could follow. */
+        real32_T uq_int_max = rtb_Gain * rtb_Gain - rtb_Switch2_e * rtb_Switch2_e;
+        if (uq_int_max >= 0.0F)
+        {
+            uq_int_max = yuanhub_sqrt_f32(uq_int_max);
+        }
+        else
+        {
+            uq_int_max = 0.0F;
+        }
+
+        if (rtb_Add3 > uq_int_max)
+        {
+            rtb_Add3 = uq_int_max;
+        }
+        else if (rtb_Add3 < -uq_int_max)
+        {
+            rtb_Add3 = -uq_int_max;
+        }
     }
 
     /* End of Switch: '<S24>/Switch2' */
