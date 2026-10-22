@@ -37,8 +37,11 @@ void current_ctl_loop_task_deadband_comp_ua(real32_T rtu_u_tar, real32_T
     /* '<S25>:1:2' if i_noise < 0.00001 */
     if (*rtu_i_noise < 1.0E-5)
     {
-        /* '<S25>:1:3' u_tar_comp = single(0); */
-        *rty_u_tar_comp = 0.0F;
+        /* fix/i-noise-zero-output: pass the voltage through uncompensated.
+         * It was '<S25>:1:3' u_tar_comp = single(0), which zeroed the phase
+         * voltage itself, so i_noise = 0 left the motor with no voltage at all
+         * (and no error) instead of turning the compensation off. */
+        *rty_u_tar_comp = rtu_u_tar;
     }
     else
     {
