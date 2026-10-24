@@ -213,17 +213,27 @@ void EncoderDataProcess(void)
 {
     uint32_t u32_calc_temp = 0;
     int64_t i64_calc_temp = 0;
+    // 选项处理只改本地副本，不写回 a/b_single_raw、a/b_multi_raw：驱动丢帧提前返回时，原始值还是上一帧的，
+    // 写回的话下一拍会被再处理一次（方向位会把计数镜像回去，bit3 会把多圈值清零）
+    uint32_t a_single[ENCODER_NUM] = {0};
+    int64_t  a_multi[ENCODER_NUM] = {0};
+    uint32_t b_single[ENCODER_NUM] = {0};
+    int64_t  b_multi[ENCODER_NUM] = {0};
 
     for (ENCODER_ID enc_id = ENCODER_ID_1; enc_id <= ENCODER_ID_MAXIMUN; enc_id ++)
     {
         // 按各自编码器协议对应解析
         encoder_data[enc_id].process(&encoder_data[enc_id]);
+        a_single[enc_id] = encoder_data[enc_id].a_single_raw;
+        a_multi[enc_id] = encoder_data[enc_id].a_multi_raw;
+        b_single[enc_id] = encoder_data[enc_id].b_single_raw;
+        b_multi[enc_id] = encoder_data[enc_id].b_multi_raw;
 
         // 编码器配置选项bit3，负载端(编码器B)单圈值 用作为 电机端多圈值(编码器A)
         if (encoder_data[enc_id].options.bits.l_cnt_2_m_turns)
         {
-            encoder_data[enc_id].a_multi_raw = encoder_data[enc_id].b_single_raw;  // 编码器A多圈值 = 编码器B单圈值
-            encoder_data[enc_id].b_single_raw = 0;    // 编码器B单圈值 = 0
+            a_multi[enc_id] = b_single[enc_id];  // 编码器A多圈值 = 编码器B单圈值
+            b_single[enc_id] = 0;    // 编码器B单圈值 = 0
             encoder_data[enc_id].real_motor_turns_res = encoder_data[enc_id].b_single_res_real; // 电机端多圈值分辨率 = 负载端单圈值分辨率
         }
         else
@@ -235,38 +245,38 @@ void EncoderDataProcess(void)
         if (!encoder_data[enc_id].options.bits.turns_overflow_0)
         {
             // 大于半圈则作为负圈数
-            if (encoder_data[enc_id].a_multi_raw > (encoder_data[enc_id].real_motor_turns_res >> 1))
+            if (a_multi[enc_id] > (encoder_data[enc_id].real_motor_turns_res >> 1))
             {
-                i64_calc_temp = encoder_data[enc_id].a_multi_raw - (int64_t)(encoder_data[enc_id].real_motor_turns_res);
-                encoder_data[enc_id].a_multi_raw = i64_calc_temp;
+                i64_calc_temp = a_multi[enc_id] - (int64_t)(encoder_data[enc_id].real_motor_turns_res);
+                a_multi[enc_id] = i64_calc_temp;
             }
-            if (encoder_data[enc_id].b_multi_raw > (encoder_data[enc_id].b_multi_res >> 1))
+            if (b_multi[enc_id] > (encoder_data[enc_id].b_multi_res >> 1))
             {
-                i64_calc_temp = encoder_data[enc_id].b_multi_raw - (int64_t)(encoder_data[enc_id].b_multi_res);
-                encoder_data[enc_id].b_multi_raw = i64_calc_temp;
+                i64_calc_temp = b_multi[enc_id] - (int64_t)(encoder_data[enc_id].b_multi_res);
+                b_multi[enc_id] = i64_calc_temp;
             }
         }
 
         // 编码器配置选项bit0，编码器A方向
         if (encoder_data[enc_id].options.bits.a_dir)
         {
-            u32_calc_temp = encoder_data[enc_id].a_single_res_real - 1 - encoder_data[enc_id].a_single_raw;
-            encoder_data[enc_id].a_single_raw = u32_calc_temp;
+            u32_calc_temp = encoder_data[enc_id].a_single_res_real - 1 - a_single[enc_id];
+            a_single[enc_id] = u32_calc_temp;
             if (encoder_data[enc_id].real_motor_turns_res > 0) // 有多圈值，才处理多圈值
             {
-                i64_calc_temp = encoder_data[enc_id].real_motor_turns_res - 1 - encoder_data[enc_id].a_multi_raw;
-                encoder_data[enc_id].a_multi_raw = i64_calc_temp;
+                i64_calc_temp = encoder_data[enc_id].real_motor_turns_res - 1 - a_multi[enc_id];
+                a_multi[enc_id] = i64_calc_temp;
             }
         }
         // 编码器配置选项bit1，编码器B方向
         if (encoder_data[enc_id].options.bits.b_dir)
         {
-            u32_calc_temp = encoder_data[enc_id].b_single_res_real - 1 - encoder_data[enc_id].b_single_raw;
-            encoder_data[enc_id].b_single_raw = u32_calc_temp;
+            u32_calc_temp = encoder_data[enc_id].b_single_res_real - 1 - b_single[enc_id];
+            b_single[enc_id] = u32_calc_temp;
             if (encoder_data[enc_id].b_multi_res > 0) // 有多圈值，才处理多圈值
             {
-                i64_calc_temp = encoder_data[enc_id].b_multi_res - 1 - encoder_data[enc_id].b_multi_raw;
-                encoder_data[enc_id].b_multi_raw = i64_calc_temp;
+                i64_calc_temp = encoder_data[enc_id].b_multi_res - 1 - b_multi[enc_id];
+                b_multi[enc_id] = i64_calc_temp;
             }
         }
     }
@@ -274,8 +284,8 @@ void EncoderDataProcess(void)
     if(encoder_data[ENCODER_ID_2].type == ENCODER_TYPE_NONE)  //只有电机端编码器
     {
         // 设置电机端编码器数据
-        encoder_data[ENCODER_ID_MOTOR].single_cnt = encoder_data[ENCODER_ID_1].a_single_raw;
-        encoder_data[ENCODER_ID_MOTOR].multi_turns = encoder_data[ENCODER_ID_1].a_multi_raw;
+        encoder_data[ENCODER_ID_MOTOR].single_cnt = a_single[ENCODER_ID_1];
+        encoder_data[ENCODER_ID_MOTOR].multi_turns = a_multi[ENCODER_ID_1];
         // 设置负载端编码器数据
         encoder_data[ENCODER_ID_LOAD].single_cnt = 0;
         encoder_data[ENCODER_ID_LOAD].multi_turns = 0;
@@ -283,11 +293,11 @@ void EncoderDataProcess(void)
     else if (encoder_data[ENCODER_ID_2].type != ENCODER_TYPE_NONE) //双编码器 电机端+负载端编码器
     {
         // 设置电机端编码器数据
-        encoder_data[ENCODER_ID_MOTOR].single_cnt = encoder_data[ENCODER_ID_1].a_single_raw;
-        encoder_data[ENCODER_ID_MOTOR].multi_turns = encoder_data[ENCODER_ID_1].a_multi_raw;
+        encoder_data[ENCODER_ID_MOTOR].single_cnt = a_single[ENCODER_ID_1];
+        encoder_data[ENCODER_ID_MOTOR].multi_turns = a_multi[ENCODER_ID_1];
         // 设置负载端编码器数据
-        encoder_data[ENCODER_ID_LOAD].single_cnt = encoder_data[ENCODER_ID_2].a_single_raw;
-        encoder_data[ENCODER_ID_LOAD].multi_turns = encoder_data[ENCODER_ID_2].a_multi_raw;
+        encoder_data[ENCODER_ID_LOAD].single_cnt = a_single[ENCODER_ID_2];
+        encoder_data[ENCODER_ID_LOAD].multi_turns = a_multi[ENCODER_ID_2];
     }
 
     // 检测编码器过零点
