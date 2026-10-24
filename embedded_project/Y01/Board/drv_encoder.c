@@ -763,6 +763,7 @@ static void MT68XX_Encoder_Data_Process(EncoderDataInfo_t* enc_data)
              MT68XX_DATA_LEN_RD_ANGLE - 1, MT68XX_CRC8_POLY) != \
              encoder_data[enc_data->id].data_raw[MT68XX_FRAME_LEN_RD_ANGLE - 1])
     {
+        enc_data->err_cnt ++;
         if (enc_data->err_cnt >= ENCODER_COMM_ERROR_MAX)
         {
             enc_data->err_cnt = ENCODER_COMM_ERROR_MAX;
