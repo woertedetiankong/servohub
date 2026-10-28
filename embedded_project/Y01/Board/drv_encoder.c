@@ -231,22 +231,6 @@ void EncoderDataProcess(void)
             encoder_data[enc_id].real_motor_turns_res = encoder_data[enc_id].a_multi_res;
         }
 
-        // 编码器配置选项bit2，多圈值溢出坐标选项，默认为0：按正负分辨率一半溢出
-        if (!encoder_data[enc_id].options.bits.turns_overflow_0)
-        {
-            // 大于半圈则作为负圈数
-            if (encoder_data[enc_id].a_multi_raw > (encoder_data[enc_id].real_motor_turns_res >> 1))
-            {
-                i64_calc_temp = encoder_data[enc_id].a_multi_raw - (int64_t)(encoder_data[enc_id].real_motor_turns_res);
-                encoder_data[enc_id].a_multi_raw = i64_calc_temp;
-            }
-            if (encoder_data[enc_id].b_multi_raw > (encoder_data[enc_id].b_multi_res >> 1))
-            {
-                i64_calc_temp = encoder_data[enc_id].b_multi_raw - (int64_t)(encoder_data[enc_id].b_multi_res);
-                encoder_data[enc_id].b_multi_raw = i64_calc_temp;
-            }
-        }
-
         // 编码器配置选项bit0，编码器A方向
         if (encoder_data[enc_id].options.bits.a_dir)
         {
@@ -266,6 +250,23 @@ void EncoderDataProcess(void)
             if (encoder_data[enc_id].b_multi_res > 0) // 有多圈值，才处理多圈值
             {
                 i64_calc_temp = encoder_data[enc_id].b_multi_res - 1 - encoder_data[enc_id].b_multi_raw;
+                encoder_data[enc_id].b_multi_raw = i64_calc_temp;
+            }
+        }
+
+        // 编码器配置选项bit2，多圈值溢出坐标选项，默认为0：按正负分辨率一半溢出
+        // 放在方向处理之后：方向取反得到的是 0..分辨率-1 的值，先取反再按半圈换成负圈数
+        if (!encoder_data[enc_id].options.bits.turns_overflow_0)
+        {
+            // 大于半圈则作为负圈数
+            if (encoder_data[enc_id].a_multi_raw > (encoder_data[enc_id].real_motor_turns_res >> 1))
+            {
+                i64_calc_temp = encoder_data[enc_id].a_multi_raw - (int64_t)(encoder_data[enc_id].real_motor_turns_res);
+                encoder_data[enc_id].a_multi_raw = i64_calc_temp;
+            }
+            if (encoder_data[enc_id].b_multi_raw > (encoder_data[enc_id].b_multi_res >> 1))
+            {
+                i64_calc_temp = encoder_data[enc_id].b_multi_raw - (int64_t)(encoder_data[enc_id].b_multi_res);
                 encoder_data[enc_id].b_multi_raw = i64_calc_temp;
             }
         }
