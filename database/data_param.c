@@ -3322,6 +3322,7 @@ uint32_t set_app_Reduction_ratio_num(uint32_t val)
     SetGearNumerator(kAppMotorConfig.Reduction_ratio_num);  //设置64bit快速除法分子
     kAppMotorConfig.Reduction_ratio = (float)kAppMotorConfig.Reduction_ratio_num / (float)kAppMotorConfig.Reduction_ratio_den;
     kAppMotorConfig.Reduction_ratio_inv = 1.0f / kAppMotorConfig.Reduction_ratio;
+    app_param_restrictions_update(); // 减速比变了，应用速度限制（电机最大转速 × 减速比倒数）跟着更新
     /* USER CODE END set_app_Reduction_ratio_num 1 */
     return APP_PARAM_SUCCESS;
 }
@@ -3341,6 +3342,7 @@ uint32_t set_app_Reduction_ratio_den(uint32_t val)
     SetGearDenominator(kAppMotorConfig.Reduction_ratio_den);   //设置64bit快速除法分母 
     kAppMotorConfig.Reduction_ratio = (float)kAppMotorConfig.Reduction_ratio_num / (float)kAppMotorConfig.Reduction_ratio_den;
     kAppMotorConfig.Reduction_ratio_inv = 1.0f / kAppMotorConfig.Reduction_ratio;
+    app_param_restrictions_update(); // 减速比变了，应用速度限制（电机最大转速 × 减速比倒数）跟着更新
     /* USER CODE END set_app_Reduction_ratio_den 1 */
     return APP_PARAM_SUCCESS;
 }
