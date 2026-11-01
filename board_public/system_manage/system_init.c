@@ -75,12 +75,23 @@ void HardwareSelfTestRun(void)
     static uint32_t load_encoder_cnt = 0;      // 负载端编码器单圈值
     static int64_t motor_encoder_turns = 0;    // 电机端编码器多圈值
     static int64_t load_encoder_turns = 0;     // 负载端编码器多圈值
+    static uint32_t encoder_ready_cnt = 0;     // 编码器连续准备好的周期数
 
     position_irq_cnt++;
 
     // 检查编码器是否准备好
+    // 第一次报准备好的那一拍，编码器数据是从上电后还没发起过读取的空接收缓存解析出来的（全零帧，
+    // MT68xx 的 CRC 从 0 开始也能通过），所以多等一拍，用真正收到的一帧初始化
     if (bsp_get_encoder_state(ENCODER_ID_MOTOR) == true && \
         bsp_get_encoder_state(ENCODER_ID_LOAD) == true)
+    {
+        encoder_ready_cnt++;
+    }
+    else
+    {
+        encoder_ready_cnt = 0;
+    }
+    if (encoder_ready_cnt >= 2)
     {
         // 编码器已准备好，获取编码器数据并初始化电机控制状态
         motor_encoder_cnt = bsp_get_encoder_cnt(ENCODER_ID_MOTOR);
