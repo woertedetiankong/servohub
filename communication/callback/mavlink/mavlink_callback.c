@@ -1075,7 +1075,7 @@ void MavlinkRecvCallback(Axis *axis, AxisDw *axis_dw, uint8_t rx_data[], uint32_
             case MAVLINK_MSG_ID_SpeedObsPllConfig:
                 mavlink_msg_speedobspllconfig_decode(&msg, (mavlink_speedobspllconfig_t *)&speed_obs_pll_config_t);
                 if(get_app_Comm_control_authority() == COMM_CONTROL_HOST){axis->speed_obs_pll_config.tp_s = speed_obs_pll_config_t.tp_s;}
-                axis->speed_obs_pll_config.wn_Hz = speed_obs_pll_config_t.wn_Hz;
+                if(get_app_Comm_control_authority() == COMM_CONTROL_HOST && speed_obs_pll_config_t.wn_Hz > 0.0f && 6.28318548F * speed_obs_pll_config_t.wn_Hz * axis->speed_obs_pll_config.tp_s < 1.0f){axis->speed_obs_pll_config.wn_Hz = speed_obs_pll_config_t.wn_Hz;} // speed_obs_pll diverges once 2*pi*wn_Hz*tp_s passes about 1.035
                 if(get_app_Comm_control_authority() == COMM_CONTROL_HOST){axis->speed_obs_pll_config.enc_line_inv_p_n = speed_obs_pll_config_t.enc_line_inv_p_n;}
                 if(get_app_Comm_control_authority() == COMM_CONTROL_HOST){axis->speed_obs_pll_config.speed_obs_max_rad_s = speed_obs_pll_config_t.speed_obs_max_rad_s;}
                 mavlink_msg_speedobspllconfig_encode(sys_id, comp_id, &send_msg, (mavlink_speedobspllconfig_t *)&speed_obs_pll_config_t);
