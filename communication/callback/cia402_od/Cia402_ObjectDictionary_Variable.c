@@ -325,7 +325,12 @@ UNS32 set_Target_position(INTEGER32 val){
     /* USER CODE END set_Target_position 0 */
     kProfile_position_mode.Target_position = val;
     /* USER CODE BEGIN set_Target_position 1 */
-    set_app_Target_position(val);
+    if (set_app_Target_position(val) != APP_PARAM_SUCCESS)
+    {
+        // 应用层拒绝（超出软件位置限位）：对象副本恢复为应用层仍在使用的目标，并把拒绝作为 SDO 中止码返回给主站
+        kProfile_position_mode.Target_position = get_app_Target_position();
+        return (val > get_app_Software_position_limit_Maximal_position_limit()) ? ABORT_CODE_VALUE_TOO_HIGH : ABORT_CODE_VALUE_TOO_LOW;
+    }
     /* USER CODE END set_Target_position 1 */
     return ABORT_CODE_SUCCESSFUL;
 }
