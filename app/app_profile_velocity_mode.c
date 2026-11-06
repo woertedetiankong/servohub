@@ -55,8 +55,11 @@ AppResult PvModeRun(void)
                                            get_app_Reduction_ratio();
             }
 
-            // 轮廓加速度减速度切换 目标速度绝对值 大于 当前规划速度绝对值加速 否则则加速
-            if (MATH_ABS(kPvMode.velocity_target) > MATH_ABS(get_app_Velocity_demand_value()))
+            // 轮廓加速度减速度切换：目标速度与当前规划速度同向（或当前为0）且绝对值更大时加速，否则减速
+            // （反向时过零之前是在减速，用轮廓减速度；过零之后同向，再用轮廓加速度）
+            float velocity_demand = get_app_Velocity_demand_value();
+            if (MATH_ABS(kPvMode.velocity_target) > MATH_ABS(velocity_demand) &&
+                kPvMode.velocity_target * velocity_demand >= 0.0f)
             {
                 kPvMode.traj.acc = get_app_Profile_acceleration() * get_app_Motor_rpm_2_pps() * \
                                    get_app_Reduction_ratio();
