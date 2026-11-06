@@ -76,6 +76,7 @@ typedef struct
     float speed_tar_to_zero;                        // 搜索零点速度
     DigitalInputsIo_t io_status;                    // IO输入状态
     bool index_state;                               // Index信号状态
+    int64_t home_pos_inc;                           // 回零参考点位置：方法7为找到Index信号那一拍的位置
     float dt;                                       // 运行周期
     float timer;                                    // 计时器，可用作超时保护
 } HomingMode_t;

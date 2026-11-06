@@ -101,8 +101,8 @@ AppResult HomingModeRun(void)
             if (kHmMode.step == HOMING_STEP_COMPLETE && get_app_Homing_state() != HOMING_STATE_SUCCEED)
             {
                 set_app_Homing_state(HOMING_STATE_SUCCEED);
-                set_app_Home_position_offset_value(get_app_Position_actual_value_inc() + \
-                                                   get_app_Home_offset());
+                // 回零偏移取回零参考点（Index信号处）的位置，而不是减速停下后的位置
+                set_app_Home_position_offset_value(kHmMode.home_pos_inc + get_app_Home_offset());
                 // TODO: 根据实际应用场景，可添加自动保存回零偏移值，但同时会将其它参数保存，注意不要重复保存
                 // return APP_RET_SUCCESS; // 设置成功将停止此模式，无法重复运行
             }
@@ -277,7 +277,8 @@ static void MethodRun_7(HomingMode_t* const p_hm)
             // 负向搜索Index信号
             if (p_hm->index_state)
             {
-                // 找到Index信号，立即减速
+                // 找到Index信号，记录此时位置作为回零参考点，立即减速
+                p_hm->home_pos_inc = get_app_Position_actual_value_inc();
                 p_hm->traj.speed_tar_p = 0;
                 p_hm->step = HOMING_STEP_DECELERATE;
             }
@@ -304,6 +305,7 @@ static void MethodRun_7(HomingMode_t* const p_hm)
 
 static void MethodRun_35(HomingMode_t* const p_hm)
 {
+    p_hm->home_pos_inc = get_app_Position_actual_value_inc(); // 当前位置作为回零参考点
     p_hm->traj.speed_tar_p = 0;
     p_hm->step = HOMING_STEP_COMPLETE;
 }
