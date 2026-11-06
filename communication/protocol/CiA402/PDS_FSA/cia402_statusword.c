@@ -31,6 +31,16 @@ static bool check_velocity_target_reached_state(void) {
     return kCheckStatusVal.bits.target_reached;
 }
 
+static bool check_torque_target_reached_state(void) {
+
+    //控制字非暂停，由各个应用更新目标到达状态
+    if (CIA402_READ_BIT(get_Controlword(), kOd6040_Halt) == 0)
+    {
+        return kCheckStatusVal.bits.target_torque_reached;
+    }
+    return kCheckStatusVal.bits.target_reached;
+}
+
 static bool check_set_point_acknowledge_state(void) {
 
     //控制字暂停，bit12置false
@@ -76,6 +86,7 @@ static const StateTableEntry state_table[] = {
     {kOd6060_PPM, kOd6041_SetPointAcknowledge, check_set_point_acknowledge_state},
     {kOd6060_PVM, kOd6041_TargetReached, check_velocity_target_reached_state},
     {kOd6060_PVM, kOd6041_SpeedRunning, check_velocity_zero_state},
+    {kOd6060_TPM, kOd6041_TargetReached, check_torque_target_reached_state},
     {kOd6060_CSP, kOd6041_FollowingError, check_position_following_error_state},
     {kOd6060_CSP, kOd6041_DriveFollowCommandValue, check_drive_follow_command_value_state},
     {kOd6060_CSV, kOd6041_DriveFollowCommandValue, check_drive_follow_command_value_state},
