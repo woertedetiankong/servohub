@@ -2007,9 +2007,9 @@ float get_app_Target_velocity(void)
 uint32_t set_app_Target_torque(float val)
 {
     /* USER CODE BEGIN set_app_Target_torque 0 */
-    if (MATH_ABS(val) > kAppRestrictParam.Max_current)
+    if (MATH_ABS(val) > kAppRestrictParam.Max_current) // 超过电流限制时限幅，而不是丢掉这次指令
     {
-        return APP_PARAM_OUT_OF_RANGE;
+        val = (val > 0.0f) ? kAppRestrictParam.Max_current : -kAppRestrictParam.Max_current;
     }
 
     /* USER CODE END set_app_Target_torque 0 */
